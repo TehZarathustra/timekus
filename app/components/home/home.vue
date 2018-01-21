@@ -1,7 +1,7 @@
 <template>
 	<div class="home">
 		<img v-bind:src='logoImg'>
-		<timeline
+		<timeline v-if="loaded"
 			ref="timeline"
 			:items="items"
 			:groups="groups"
@@ -92,18 +92,29 @@
 import logo from '../../outdated-browser.png';
 import TimeLine from '../../../node_modules/vue2vis/src/components/timeline.vue';
 import moment from 'moment';
+import firebase from 'firebase';
 
 export default {
+	firebase ()  {
+		return {
+			items: {
+				source: firebase.database().ref('items'),
+				readyCallback: function () {
+					this.loaded = true;
+				}
+			}
+		}
+	},
 	data () {
 		return {
 			user: this.$store.getters.user || 'someone',
 			logoImg: logo,
 			groups: this.$store.getters.groups,
-			items: this.$store.getters.items,
 			content: null,
 			fullContent: null,
 			start: null,
 			finish: null,
+			loaded: false,
 			date: null,
 			menu: null,
 			menuF: null,
@@ -131,17 +142,19 @@ export default {
 				item = Object.assign(item, {end: this.finish, type: 'range'});
 			}
 
-			this.$store.commit('addItem', item);
-
-			setTimeout(() => this.$refs.timeline.fit(), 100);
-
-			this.clear();
+			this.$firebaseRefs.items.push(item).then(() => {
+				setTimeout(() => this.$refs.timeline.fit(), 100);
+				this.clear();
+			}).catch(error => {
+				console.log(error);
+			});
 		},
 		clear () {
 			this.content = null;
+			this.fullContent = null;
 		},
 		showContent (data) {
-			const item = this.$store.getters.items[data.items[0]];
+			const item = this.items[data.items[0]];
 			const target = data.event.target;
 
 			if (!item) {
@@ -155,7 +168,7 @@ export default {
 			}
 
 			const hasContent = $(target).find('.full-content').length > 0
-				|| $(target).closest('.vis-item').find('.full-content').length > 0;
+				|| $(target).parents('.vis-item').find('.full-content').length > 0;
 
 			if (hasContent) {
 				return;
@@ -173,6 +186,11 @@ export default {
 	computed: {
 		canAdd () {
 			return Boolean(this.content && this.start);
+		},
+		filteredItems () {
+			console.log(this.items);
+
+			return items;
 		}
 	},
 	components: {
@@ -202,4 +220,5 @@ export default {
 		font-size: 1.2em
 	.vis-title-date
 		font-size: .7em
+		display: inline-block
 </style>
