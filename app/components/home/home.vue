@@ -1,15 +1,24 @@
 <template>
 	<div class="home">
 		<img v-bind:src='logoImg'>
-		<timeline ref="timeline" :items="items" :groups="groups" :options="options">
+		<timeline
+			ref="timeline"
+			:items="items"
+			:groups="groups"
+			:options="options"
+			v-on:select="showContent"
+			v-on:click="resetContent">
 		</timeline>
 		<br/>
 		<form>
 			<v-text-field
-              label="content"
+              label="title"
               v-model="content"
             ></v-text-field>
-			<!--  -->
+            <v-text-field
+              label="content"
+              v-model="fullContent"
+            ></v-text-field>
 			<v-layout row wrap>
 			<v-flex xs11 sm5>
 				<v-menu
@@ -73,10 +82,8 @@
 				</v-menu>
 			</v-flex>
 			</v-layout>
-			<!--  -->
 
 			<v-btn color="primary" :disabled="!canAdd" @click.stop.prevent="add()">Add</v-btn>
-			<v-btn @click="clear()">Clear</v-btn>
 		</form>
 	</div>
 </template>
@@ -94,25 +101,28 @@ export default {
 			groups: this.$store.getters.groups,
 			items: this.$store.getters.items,
 			content: null,
+			fullContent: null,
 			start: null,
 			finish: null,
 			date: null,
 			menu: null,
 			menuF: null,
 			options: {
-		  width: '100%',
-		  minHeight: '200px',
-		  margin: {
-		    item: 20
-		  }
-		}		}
+				width: '100%',
+				minHeight: '59vh',
+				margin: {
+					item: 20
+				}
+			}
+		}
 	},
 	methods: {
 		add () {
 			let item = {
 				id: this.items.length,
 				group: 0,
-				content: this.content,
+				fullContent: this.fullContent,
+				content: `<div class="vis-title">${this.content} <div class="vis-title-date">(${this.start})</div></div>`,
 				start: this.start,
 				type: 'box'
 			};
@@ -124,11 +134,40 @@ export default {
 			this.$store.commit('addItem', item);
 
 			setTimeout(() => this.$refs.timeline.fit(), 100);
+
+			this.clear();
 		},
 		clear () {
 			this.content = null;
-			this.finish = null;
-			this.start = null;
+		},
+		showContent (data) {
+			const item = this.$store.getters.items[data.items[0]];
+			const target = data.event.target;
+
+			if (!item) {
+				return;
+			}
+
+			const fullContent = item.fullContent;
+
+			if (!fullContent) {
+				return;
+			}
+
+			const hasContent = $(target).find('.full-content').length > 0
+				|| $(target).closest('.vis-item').find('.full-content').length > 0;
+
+			if (hasContent) {
+				return;
+			}
+
+			$(target).parent().append(`<div class="full-content">${fullContent}</div>`);
+
+			this.resetContent();
+		},
+		resetContent () {
+			this.$refs.timeline.redraw();
+			this.$refs.timeline.fit();
 		}
 	},
 	computed: {
@@ -136,26 +175,31 @@ export default {
 			return Boolean(this.content && this.start);
 		}
 	},
-// 	created () {
-// 		setTimeout(() => {
-// 			this.$refs.timeline.on('select', function (properties) {
-//   alert('selected items: ' + properties.items);
-// 		}, 2000);
-
-// });
-// 	},
 	components: {
 		timeline: TimeLine
 	}
 }
 </script>
 
-<style scoped lang="sass">
+<style lang="sass">
 	.home
-		padding: 30px
-		width: 800px
+		width: 96%
 		margin: 20px auto
 		text-align: center
 		img
+			display: none
 			width: 150px
+	form
+		width: 400px
+		margin: 0 auto
+	.vis-item
+		.full-content
+			display: none
+			font-size: 12px
+		&.vis-selected .full-content
+			display: block
+	.vis-title
+		font-size: 1.2em
+	.vis-title-date
+		font-size: .7em
 </style>

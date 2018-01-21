@@ -9,16 +9,17 @@ export const store = new Vuex.Store({
 		groups: [
 			{
 				id: 0,
-				content: 'Какая-то группа'
+				content: ''
 			}
 		],
 		items: [
 			{
 				id: 0,
 				group: 0,
-				content: '<span style="color:#97B0F8;">(Anchor)</span>',
+				content: '<div class="vis-title">Anchor<div class="vis-title-date">(2018-01-08)</div></div>',
 				start: '2018-01-08',
-				type: 'box'
+				type: 'box',
+				fullContent: 'kekan'
 			}
 		]
 	},
