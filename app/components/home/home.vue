@@ -130,7 +130,6 @@ export default {
 	methods: {
 		add () {
 			let item = {
-				id: this.items.length,
 				group: 0,
 				fullContent: this.fullContent,
 				content: `<div class="vis-title">${this.content} <div class="vis-title-date">(${this.start})</div></div>`,
@@ -142,10 +141,16 @@ export default {
 				item = Object.assign(item, {end: this.finish, type: 'range'});
 			}
 
-			this.$firebaseRefs.items.push(item).then(() => {
+			this.$firebaseRefs.items.push(item).then((data) => {
+				return data.key;
+			})
+			.then(key => {
+				this.$firebaseRefs.items.child(key).set(Object.assign(item, {id: key}));
+
 				setTimeout(() => this.$refs.timeline.fit(), 100);
 				this.clear();
-			}).catch(error => {
+			})
+			.catch(error => {
 				console.log(error);
 			});
 		},
@@ -154,7 +159,7 @@ export default {
 			this.fullContent = null;
 		},
 		showContent (data) {
-			const item = this.items[data.items[0]];
+			const item = this.findItemByKey(data.items[0]);
 			const target = data.event.target;
 
 			if (!item) {
@@ -177,6 +182,9 @@ export default {
 			$(target).parent().append(`<div class="full-content">${fullContent}</div>`);
 
 			this.resetContent();
+		},
+		findItemByKey (key) {
+			return this.items.find(item => item['.key'] === key);
 		},
 		resetContent () {
 			this.$refs.timeline.redraw();
